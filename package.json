@@ -1,10 +1,11 @@
 {
   "name": "my-app",
+  "type": "module",
   "version": "1.0.0",
   "description": "Modular 3D real-estate and development intelligence for Savannah.",
   "main": "main.js",
   "scripts": {
-    "test": "npm run build",
+    "test": "node --test",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

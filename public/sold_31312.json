@@ -1,0 +1,19 @@
+{
+  "city": "Guyton, GA",
+  "zip": "31312",
+  "mode": "sold",
+  "as_of": "2026-08-09",
+  "source_url": "https://www.redfin.com/zipcode/31312/recently-sold",
+  "market_trend": -9.85,
+  "properties": [
+    {"address":"807 Hyacinth Cir","city":"Guyton","state":"GA","zip":"31312","sale_price":387000,"beds":5,"baths":2.5,"sqft":3022,"sold_date":"June-5-2026","latitude":32.1876768,"longitude":-81.2752838},
+    {"address":"2925 Sandhill Rd","city":"Guyton","state":"GA","zip":"31312","sale_price":300000,"beds":3,"baths":2,"sqft":1480,"sold_date":"May-4-2026","latitude":32.2056481,"longitude":-81.3917732},
+    {"address":"239 Magnolia Pl","city":"Guyton","state":"GA","zip":"31312","sale_price":225000,"beds":3,"baths":2.5,"sqft":1682,"sold_date":"May-7-2026","latitude":32.3410553,"longitude":-81.3565873},
+    {"address":"118 Brittany Ln","city":"Guyton","state":"GA","zip":"31312","sale_price":282000,"beds":3,"baths":2,"sqft":1368,"sold_date":"May-20-2026","latitude":32.1964039,"longitude":-81.3362805},
+    {"address":"319 Windsor Rd","city":"Guyton","state":"GA","zip":"31312","sale_price":415000,"beds":3,"baths":3,"sqft":1863,"sold_date":"July-27-2026","latitude":32.1915241,"longitude":-81.3222179},
+    {"address":"115 Vintage Dr","city":"Guyton","state":"GA","zip":"31312","sale_price":760000,"beds":5,"baths":4,"sqft":2995,"sold_date":"July-27-2026","latitude":32.1964636,"longitude":-81.3646729},
+    {"address":"200 Cyane Ln","city":"Guyton","state":"GA","zip":"31312","sale_price":340000,"beds":3,"baths":2,"sqft":1544,"sold_date":"July-24-2026","latitude":32.2841887,"longitude":-81.3486776},
+    {"address":"1A Bellemeade Dr","city":"Guyton","state":"GA","zip":"31312","sale_price":381700,"beds":5,"baths":3,"sqft":2738,"sold_date":"July-24-2026","latitude":32.3282438,"longitude":-81.4195751},
+    {"address":"428 Pecan Ln","city":"Guyton","state":"GA","zip":"31312","sale_price":280000,"beds":3,"baths":2,"sqft":1450,"sold_date":"July-10-2026","latitude":32.2006939,"longitude":-81.2735132}
+  ]
+}

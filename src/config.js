@@ -1,10 +1,18 @@
 export const APP_CONFIG = {
-  propertyFeed: '/savannah_enriched.json',
+  listingFeeds: {
+    sold: ['/savannah_enriched.json', '/sold_31312.json'],
+    'for-sale': ['/active_listings.json'],
+  },
   mapStyle: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
-  center: [-81.0998, 32.0809],
-  zoom: 12.25,
+  center: [-81.205, 32.145],
+  zoom: 9.65,
   pitch: 58,
   bearing: -18,
+};
+
+export const MARKET_MODES = {
+  sold: { label: 'Sold', priceLabel: 'Median sale', countLabel: 'Visible sales', dateLabel: 'Sold' },
+  'for-sale': { label: 'For sale', priceLabel: 'Median ask', countLabel: 'Active listings', dateLabel: 'Listed' },
 };
 
 export const PRICE_BANDS = [

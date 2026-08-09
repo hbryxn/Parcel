@@ -2,19 +2,24 @@ import './style.css';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import maplibregl from 'maplibre-gl';
 import { APP_CONFIG } from './src/config.js';
-import { PropertyRepository } from './src/data/propertyRepository.js';
+import { ListingRepository } from './src/data/listingRepository.js';
 import { ProjectRepository } from './src/data/projectRepository.js';
-import { MarketModel } from './src/analytics/marketModel.js';
+import { MarketService } from './src/analytics/marketService.js';
 import { MapExperience } from './src/map/mapExperience.js';
 import { Dashboard } from './src/ui/dashboard.js';
+import { MarketController } from './src/application/marketController.js';
+import { BuildingFootprintRepository } from './src/data/buildingFootprintRepository.js';
 
 async function boot() {
-  const properties = await new PropertyRepository(APP_CONFIG.propertyFeed).load();
-  const projects = await new ProjectRepository().load();
-  const market = new MarketModel(properties, projects);
-  const dashboard = new Dashboard(document.querySelector('#app'), market);
+  const [listings, projects] = await Promise.all([
+    new ListingRepository(APP_CONFIG.listingFeeds).load(),
+    new ProjectRepository().load(),
+  ]);
+  const market = new MarketService(listings, projects);
+  const footprints = new BuildingFootprintRepository();
+  const dashboard = new Dashboard(document.querySelector('#app'));
 
-  dashboard.render();
+  dashboard.render(market.query());
 
   const map = new maplibregl.Map({
     container: 'map',
@@ -30,9 +35,9 @@ async function boot() {
   map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-left');
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
 
-  const mapExperience = new MapExperience(map, market, dashboard);
-  dashboard.connect(mapExperience);
-  map.once('load', () => mapExperience.initialize());
+  const mapExperience = new MapExperience(map, projects);
+  const controller = new MarketController(market, footprints, mapExperience, dashboard);
+  map.once('load', () => controller.initialize());
 }
 
 boot().catch((error) => {

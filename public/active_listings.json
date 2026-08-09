@@ -1,0 +1,19 @@
+{
+  "mode": "for-sale",
+  "as_of": "2026-08-09",
+  "properties": [
+    {"address":"390 Central Ave","city":"Guyton","state":"GA","zip":"31312","list_price":429000,"beds":3,"baths":2,"sqft":2240,"latitude":32.3237709,"longitude":-81.3924388,"market_trend":-9.85,"source_url":"https://www.redfin.com/zipcode/31312"},
+    {"address":"122 Bellevue Blvd","city":"Guyton","state":"GA","zip":"31312","list_price":485000,"beds":5,"baths":3,"sqft":3450,"latitude":32.2372995,"longitude":-81.2800161,"market_trend":-9.85,"source_url":"https://www.redfin.com/zipcode/31312"},
+    {"address":"110 Cameron Oaks Dr","city":"Guyton","state":"GA","zip":"31312","list_price":450000,"beds":4,"baths":2,"sqft":1762,"latitude":32.2971980,"longitude":-81.4028292,"market_trend":-9.85,"source_url":"https://www.redfin.com/zipcode/31312"},
+    {"address":"330 Lakeshore Dr","city":"Guyton","state":"GA","zip":"31312","list_price":369000,"beds":3,"baths":2.5,"sqft":1981,"latitude":32.4220555,"longitude":-81.4612690,"market_trend":-9.85,"source_url":"https://www.redfin.com/zipcode/31312"},
+    {"address":"103 Stage Coach Cir","city":"Guyton","state":"GA","zip":"31312","list_price":499900,"beds":5,"baths":3,"sqft":3601,"latitude":32.2190539,"longitude":-81.4016351,"market_trend":-9.85,"source_url":"https://www.redfin.com/zipcode/31312"},
+    {"address":"125 Hawthorne Dr","city":"Guyton","state":"GA","zip":"31312","list_price":280000,"beds":3,"baths":2,"sqft":1480,"latitude":32.1978404,"longitude":-81.2904872,"market_trend":-9.85,"source_url":"https://www.redfin.com/zipcode/31312"},
+    {"address":"158 Clover Pointe Cir","city":"Guyton","state":"GA","zip":"31312","list_price":489900,"beds":5,"baths":3,"sqft":4528,"latitude":32.2301161,"longitude":-81.2736455,"market_trend":-9.85,"source_url":"https://www.redfin.com/zipcode/31312"},
+    {"address":"615 Tattnall St","city":"Savannah","state":"GA","zip":"31401","list_price":1095500,"beds":2,"baths":2.5,"sqft":1800,"latitude":32.0698040,"longitude":-81.0987790,"market_trend":4.6,"source_url":"https://www.redfin.com/zipcode/31401"},
+    {"address":"615 E 38th St","city":"Savannah","state":"GA","zip":"31401","list_price":690000,"beds":5,"baths":4,"sqft":2500,"latitude":32.0537976,"longitude":-81.0924196,"market_trend":4.6,"source_url":"https://www.redfin.com/zipcode/31401"},
+    {"address":"630 E 55th St","city":"Savannah","state":"GA","zip":"31405","list_price":679900,"beds":3,"baths":2,"sqft":1968,"latitude":32.0400532,"longitude":-81.0918106,"market_trend":3.2,"source_url":"https://www.redfin.com/zipcode/31405"},
+    {"address":"5116 Abercorn St","city":"Savannah","state":"GA","zip":"31405","list_price":625000,"beds":3,"baths":2,"sqft":2057,"latitude":32.0309946,"longitude":-81.1070723,"market_trend":3.2,"source_url":"https://www.redfin.com/zipcode/31405"},
+    {"address":"702 Birchwood Rd","city":"Savannah","state":"GA","zip":"31419","list_price":450000,"beds":3,"baths":2,"sqft":2298,"latitude":31.9672945,"longitude":-81.1574242,"market_trend":1.8,"source_url":"https://www.redfin.com/zipcode/31419"},
+    {"address":"111 Shady Grove Ln","city":"Savannah","state":"GA","zip":"31419","list_price":305000,"beds":3,"baths":2,"sqft":1896,"latitude":31.9967647,"longitude":-81.2739790,"market_trend":1.8,"source_url":"https://www.redfin.com/zipcode/31419"}
+  ]
+}

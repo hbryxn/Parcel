@@ -3,6 +3,11 @@ export const APP_CONFIG = {
     sold: ['/savannah_enriched.json', '/sold_31312.json'],
     'for-sale': ['/active_listings.json'],
   },
+  liveListings: {
+    endpoint: '/api/listings/live',
+    timeoutMs: 9000,
+    expectedFreshnessHours: 24,
+  },
   mapStyle: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
   center: [-81.205, 32.145],
   zoom: 9.65,

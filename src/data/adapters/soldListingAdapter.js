@@ -13,6 +13,8 @@ export class SoldListingAdapter {
       price: row.sale_price, pricePerSqft: row.price_per_sqft, sqft: row.sqft, lotSize: row.lot_size,
       beds: row.beds, baths: row.baths, type: row.property_type, eventDate: row.sold_date,
       trend: row.trend ?? payload.market_trend, insight: row.news, sourceUrl: row.url || payload.source_url,
+      sourceName: row.url ? 'Redfin export' : 'Public sales snapshot', sourceRecordId: row.mls,
+      sourceUpdatedAt: row.sold_date || payload.collected, retrievedAt: payload.collected,
       footprint: row.footprint,
       latitude: row.latitude, longitude: row.longitude,
     })).filter(isMappableListing);

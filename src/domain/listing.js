@@ -21,6 +21,11 @@ export const makeListing = (input) => {
     trend: safeNumber(input.trend) || 0,
     insight: input.insight || null,
     sourceUrl: input.sourceUrl || null,
+    sourceName: input.sourceName || 'Unknown source',
+    sourceRecordId: input.sourceRecordId || input.id,
+    sourceUpdatedAt: input.sourceUpdatedAt || input.eventDate || null,
+    retrievedAt: input.retrievedAt || null,
+    daysOnMarket: safeNumber(input.daysOnMarket),
     footprint: input.footprint || null,
     coordinates: [safeNumber(input.longitude), safeNumber(input.latitude)],
   });

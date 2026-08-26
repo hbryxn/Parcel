@@ -9,17 +9,19 @@ import { MapExperience } from './src/map/mapExperience.js';
 import { Dashboard } from './src/ui/dashboard.js';
 import { MarketController } from './src/application/marketController.js';
 import { BuildingFootprintRepository } from './src/data/buildingFootprintRepository.js';
+import { DataQualityService } from './src/analytics/dataQualityService.js';
 
 async function boot() {
-  const [listings, projects] = await Promise.all([
-    new ListingRepository(APP_CONFIG.listingFeeds).load(),
+  const [listingResult, projects] = await Promise.all([
+    new ListingRepository(APP_CONFIG.listingFeeds, APP_CONFIG.liveListings).load(),
     new ProjectRepository().load(),
   ]);
-  const market = new MarketService(listings, projects);
+  const market = new MarketService(listingResult.listings, projects);
+  const quality = new DataQualityService().evaluate(listingResult);
   const footprints = new BuildingFootprintRepository();
   const dashboard = new Dashboard(document.querySelector('#app'));
 
-  dashboard.render(market.query());
+  dashboard.render(market.query(), quality);
 
   const map = new maplibregl.Map({
     container: 'map',

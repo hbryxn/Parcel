@@ -13,6 +13,8 @@ export class ActiveListingAdapter {
       price: row.list_price, sqft: row.sqft, lotSize: row.lot_size, beds: row.beds, baths: row.baths,
       type: row.property_type, eventDate: row.listed_date || payload.as_of, trend: row.price_change_pct ?? row.market_trend,
       insight: row.news, sourceUrl: row.source_url, latitude: row.latitude, longitude: row.longitude,
+      sourceName: 'Curated market snapshot', sourceRecordId: row.mls,
+      sourceUpdatedAt: row.source_updated_at || row.listed_date || payload.as_of, retrievedAt: payload.as_of,
       footprint: row.footprint,
     })).filter(isMappableListing);
   }

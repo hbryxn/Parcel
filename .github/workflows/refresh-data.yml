@@ -1,0 +1,37 @@
+name: Refresh market data
+
+# Zillow publishes mid-month, Redfin monthly, and Chatham County parcels/permits weekly.
+# A weekly run keeps recorded sales and permits current; add RENTCAST_API_KEY as a
+# repository secret to also refresh on-market and delisted inventory.
+on:
+  schedule:
+    - cron: '0 11 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run pipeline
+        run: npm run pipeline
+        env:
+          RENTCAST_API_KEY: ${{ secrets.RENTCAST_API_KEY }}
+      - run: npm test
+      - name: Commit refreshed data
+        run: |
+          if git diff --quiet -- public/data; then echo "No data changes"; exit 0; fi
+          git config user.name "parcel-data-bot"
+          git config user.email "parcel-data-bot@users.noreply.github.com"
+          git add public/data
+          git commit -m "Refresh market data $(date -u +%Y-%m-%d)"
+          git push

@@ -1,9 +1,7 @@
 const RENTCAST_ENDPOINT = 'https://api.rentcast.io/v1/listings/sale';
 
-export const COVERED_ZIPS = new Set([
-  '31312', '31322', '31326',
-  '31401', '31404', '31405', '31406', '31407', '31408', '31410', '31411', '31415', '31419',
-]);
+// Matches the pipeline region (pipeline/config.js): every listing within 40 miles of Savannah.
+export const REGION = { latitude: 32.08, longitude: -81.1, radiusMiles: 40 };
 
 const jsonResponse = (body, status = 200, cache = 'no-store') => new Response(JSON.stringify(body), {
   status,
@@ -15,17 +13,15 @@ const timestamp = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const priorPrice = (listing) => {
-  const events = Object.entries(listing.history || {}).map(([date, event]) => ({ date, ...event }))
-    .filter((event) => Number.isFinite(Number(event.price)))
-    .sort((a, b) => timestamp(b.date) - timestamp(a.date));
-  return events.find((event) => Number(event.price) !== Number(listing.price))?.price ?? null;
-};
+const historyOf = (listing) => Object.entries(listing.history || {})
+  .map(([date, event]) => ({ date: String(date).slice(0, 10), event: event.event || 'Listing', price: Number(event.price) }))
+  .filter((event) => Number.isFinite(event.price) && event.price > 0)
+  .sort((a, b) => timestamp(a.date) - timestamp(b.date));
 
 export const normalizeRentCastListing = (listing) => {
-  const before = Number(priorPrice(listing));
   const price = Number(listing.price);
-  const priceChange = before > 0 && price > 0 ? (price - before) / before * 100 : 0;
+  const history = historyOf(listing);
+  const before = [...history].reverse().find((event) => event.price !== price)?.price;
   return {
     id: listing.id,
     address: listing.addressLine1 || listing.formattedAddress,
@@ -40,39 +36,40 @@ export const normalizeRentCastListing = (listing) => {
     listed_date: listing.listedDate,
     source_updated_at: listing.lastSeenDate || listing.listedDate,
     days_on_market: Number(listing.daysOnMarket) || null,
-    price_change_pct: priceChange,
+    price_change_pct: before > 0 && price > 0 ? (price - before) / before * 100 : 0,
+    history,
     source_url: null,
     latitude: Number(listing.latitude),
     longitude: Number(listing.longitude),
   };
 };
 
-export async function getLiveListingsResponse(apiKey, fetchImpl = fetch) {
+// Each page is one billable RentCast request; raise maxPages only on a paid plan.
+export async function getLiveListingsResponse(apiKey, fetchImpl = fetch, { maxPages = 1 } = {}) {
   if (!apiKey) return jsonResponse({ code: 'LIVE_PROVIDER_NOT_CONFIGURED', message: 'Live provider is not configured.' }, 503);
 
-  const query = new URLSearchParams({
-    latitude: '32.144', longitude: '-81.205', radius: '45', status: 'Active', limit: '500',
-  });
-
   try {
-    const upstream = await fetchImpl(`${RENTCAST_ENDPOINT}?${query}`, {
-      headers: { 'X-Api-Key': apiKey, Accept: 'application/json' },
-    });
-    if (!upstream.ok) {
-      return jsonResponse({ code: 'LIVE_PROVIDER_ERROR', message: `Live provider returned ${upstream.status}.` }, 502);
+    const properties = [];
+    for (let offset = 0; offset < maxPages * 500; offset += 500) {
+      const query = new URLSearchParams({
+        latitude: String(REGION.latitude), longitude: String(REGION.longitude), radius: String(REGION.radiusMiles), status: 'Active', limit: '500', offset: String(offset),
+      });
+      const upstream = await fetchImpl(`${RENTCAST_ENDPOINT}?${query}`, { headers: { 'X-Api-Key': apiKey, Accept: 'application/json' } });
+      if (!upstream.ok) {
+        if (properties.length) break;
+        return jsonResponse({ code: 'LIVE_PROVIDER_ERROR', message: `Live provider returned ${upstream.status}.` }, 502);
+      }
+      const payload = await upstream.json();
+      const page = Array.isArray(payload) ? payload : [];
+      properties.push(...page.map(normalizeRentCastListing)
+        .filter((listing) => listing.id && listing.address && listing.list_price > 10000 && Number.isFinite(listing.latitude) && Number.isFinite(listing.longitude)));
+      if (page.length < 500) break;
     }
-
-    const payload = await upstream.json();
-    const properties = (Array.isArray(payload) ? payload : [])
-      .filter((listing) => COVERED_ZIPS.has(String(listing.zipCode || '')))
-      .map(normalizeRentCastListing)
-      .filter((listing) => listing.id && listing.address && listing.list_price > 10000 && Number.isFinite(listing.latitude) && Number.isFinite(listing.longitude));
     const sourceTimes = properties.map((listing) => timestamp(listing.source_updated_at)).filter(Boolean);
-    const retrievedAt = new Date().toISOString();
 
     return jsonResponse({
       provider: 'RentCast',
-      retrieved_at: retrievedAt,
+      retrieved_at: new Date().toISOString(),
       source_updated_at: sourceTimes.length ? new Date(Math.max(...sourceTimes)).toISOString() : null,
       properties,
     }, 200, 'public, max-age=300, s-maxage=3600, stale-while-revalidate=600');

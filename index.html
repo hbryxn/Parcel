@@ -2,24 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#07100d" />
-    <meta name="description" content="Parcel — spatial intelligence for real-estate decisions in Savannah." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b1116" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="Parcel: home values, price changes, planned projects and investment signals for the Savannah region." />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Parcel — See Where Value Moves Next" />
-    <meta property="og:description" content="Explore Savannah property sales, planned projects and transparent market scenarios on a 3D map." />
+    <meta property="og:title" content="Parcel: See Where Value Moves Next" />
+    <meta property="og:description" content="Recorded sales, listings, planned projects and ZIP-level investment scores for the Savannah region." />
     <meta property="og:image" content="/og-v2.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Parcel — See Where Value Moves Next" />
-    <meta name="twitter:description" content="3D real-estate and planned-development intelligence for Savannah." />
+    <meta name="twitter:title" content="Parcel: See Where Value Moves Next" />
+    <meta name="twitter:description" content="Home values, price changes and planned-project impact across the Savannah region." />
     <meta name="twitter:image" content="/og-v2.png" />
-    <title>Parcel — Savannah Market Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <title>Parcel · Savannah Market Intelligence</title>
+    <script>
+      try { const t = localStorage.getItem('parcel.theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); document.documentElement.dataset.theme = t; } catch { /* default theme */ }
+    </script>
   </head>
   <body>
     <div id="app" aria-live="polite">
       <div class="boot-screen">
-        <div class="boot-mark">P</div>
-        <p>Assembling Savannah market intelligence…</p>
+        <div class="brand-mark" aria-hidden="true"></div>
+        <p>Loading Savannah market data…</p>
       </div>
     </div>
     <script type="module" src="/main.js"></script>

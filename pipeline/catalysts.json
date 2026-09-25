@@ -1,0 +1,55 @@
+{
+  "_note": "Curated regional catalysts not covered by the SAGIS/MPC feeds. Review quarterly: update stage and expectedYear, and cite a public source for every change.",
+  "reviewedAt": "2026-09-25",
+  "projects": [
+    {
+      "id": "hmgma", "name": "Hyundai Motor Group Metaplant America", "category": "employment", "scale": "regional", "stage": "construction", "expectedYear": 2031,
+      "coordinates": [-81.451, 32.1605], "jobs": 8500,
+      "summary": "EV/hybrid plant in Ellabell (Bryan County) that opened in 2024 and was about 4,400 on-site jobs into a site-wide target of 8,500 by 2031. A $2.7B expansion would raise capacity to 500,000 vehicles. It's the largest demand driver for housing in Pooler, Richmond Hill, Rincon and Ellabell.",
+      "effects": [{ "lift": 5.5, "radiusMiles": 24 }],
+      "source": "HMGMA / Hyundai newsroom", "sourceUrl": "https://www.hmgma.com/our-facility/"
+    },
+    {
+      "id": "ocean-terminal", "name": "Ocean Terminal redevelopment", "category": "port", "scale": "regional", "stage": "construction", "expectedYear": 2028.9,
+      "coordinates": [-81.112, 32.089], "coordinatePrecision": "approximate", "costUsd": 1600000000,
+      "summary": "About $1.6B conversion of Ocean Terminal to container service, growing capacity from 200K to about 1.75M TEUs. The berths finish in 2026 and the yard by the end of 2028. It brings regional jobs, plus freight traffic next to west-side neighborhoods. A new overpass routes trucks toward US 17/I-16.",
+      "source": "Georgia Ports Authority", "sourceUrl": "https://gaports.com/facilities/port-of-savannah/ocean-terminal/"
+    },
+    {
+      "id": "canal-district", "name": "Canal District · Common Ground", "category": "district", "scale": "district", "stage": "approved", "expectedYear": 2032,
+      "coordinates": [-81.1124, 32.0735],
+      "summary": "Master plan and action playbook approved by council in October 2025. It covers a 55-acre park, housing, mobility and city-land activation around Enmarket Arena west of downtown.",
+      "source": "City of Savannah", "sourceUrl": "https://www.savannahga.gov/1673/Canal-District"
+    },
+    {
+      "id": "civic-legacy", "name": "Civic Legacy Project", "category": "district", "scale": "neighborhood", "stage": "construction", "expectedYear": 2027.5,
+      "coordinates": [-81.0966, 32.0755],
+      "summary": "Removal of the old arena and the first phase of a long-term revitalization of the civic-center site.",
+      "source": "City of Savannah", "sourceUrl": "https://savannahga.gov/m/newsflash/home/detail/3303"
+    },
+    {
+      "id": "river-street", "name": "River Street Mobility", "category": "mobility", "scale": "neighborhood", "stage": "design", "expectedYear": 2029,
+      "coordinates": [-81.0875, 32.0818],
+      "summary": "Planning for a waterfront multimodal path, access and ADA improvements.",
+      "source": "City project update", "sourceUrl": "https://agenda.savannahga.gov/content/files/1-tourism-product-development-project-update-presentation.pdf"
+    },
+    {
+      "id": "dawes-homes", "name": "Dawes Avenue Homes", "category": "residential", "scale": "site", "stage": "approved", "expectedYear": 2028,
+      "coordinates": [-81.202, 32.044], "units": 32,
+      "summary": "32 homes, a mixed-use community building and dedicated garden/park space.",
+      "source": "Savannah City Council", "sourceUrl": "https://agenda.savannahga.gov/publishing/january-22-2026-city-council-regular-meeting/1543_11948.html"
+    },
+    {
+      "id": "argyle-grove", "name": "Argyle Grove", "category": "district", "scale": "district", "stage": "proposed", "expectedYear": 2033,
+      "coordinates": [-81.311, 32.037],
+      "summary": "A proposed 274-acre residential, commercial and mixed-use district in west Savannah (zoning petition).",
+      "source": "Savannah City Council", "sourceUrl": "https://agenda.savannahga.gov/publishing/june-25-2026-city-council-regular-meeting/agenda.html"
+    },
+    {
+      "id": "i16-i95", "name": "I-16 at I-95 interchange reconstruction", "category": "transportation", "scale": "district", "stage": "complete", "expectedYear": 2025.8,
+      "coordinates": [-81.2405, 32.0762],
+      "summary": "GDOT rebuilt the I-16/I-95 interchange and I-516 ramps, reaching substantial completion in late 2025. It improves access for Pooler, west Chatham and the airport corridor.",
+      "source": "Georgia DOT (16@95 Improvement Projects)", "sourceUrl": "https://1695improvements-gdot.hub.arcgis.com/"
+    }
+  ]
+}

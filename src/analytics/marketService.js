@@ -1,62 +1,76 @@
 import { PRICE_BANDS } from '../config.js';
+import { median } from './stats.js';
 
-const median = (values) => {
-  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
-  if (!sorted.length) return 0;
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
-};
+export const DEFAULT_FILTERS = Object.freeze({ statuses: ['for-sale', 'pending', 'sold'], band: 'all', query: '', verdict: 'all' });
 
-const groupBy = (records, key) => records.reduce((groups, record) => {
-  const value = record[key];
-  groups.set(value, [...(groups.get(value) || []), record]);
-  return groups;
-}, new Map());
-
-const milesBetween = ([lng1, lat1], [lng2, lat2]) => {
-  const toRad = (degrees) => degrees * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1); const dLng = toRad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return 3958.8 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
-
+// Holds the loaded records and answers filter queries for the map, list and summaries.
 export class MarketService {
-  constructor(listingsByMode, projects) {
-    this.listingsByMode = listingsByMode; this.projects = projects; this.mode = 'sold'; this.projectImpact = true;
+  constructor({ properties, areas, projects }) {
+    this.properties = properties; this.areas = areas; this.projects = projects;
+    this.areaByZip = new Map(areas.map((area) => [area.zip, area]));
+    this.offMarket = new Map();
   }
 
-  setMode(mode) { if (this.listingsByMode[mode]) this.mode = mode; }
-  setProjectImpact(enabled) { this.projectImpact = enabled; }
-  all() { return this.listingsByMode[this.mode]; }
+  setOffMarket(zip, records) { this.offMarket.set(zip, records); }
+  offMarketRecords() { return [...this.offMarket.values()].flat(); }
 
-  impactFor(listing) {
-    if (!this.projectImpact) return 0;
-    return this.projects.reduce((total, project) => {
-      const distance = milesBetween(listing.coordinates, project.coordinates);
-      return distance > project.radiusMiles ? total : total + project.modeledLift * (1 - distance / project.radiusMiles);
-    }, 0);
+  matches(property, { statuses, band, query, verdict }) {
+    if (!statuses.includes(property.status)) return false;
+    if (band !== 'all') {
+      const index = PRICE_BANDS.findIndex((item) => property.displayPrice <= item.max);
+      if (PRICE_BANDS[index]?.key !== band) return false;
+    }
+    if (verdict === 'good' && !(property.signal >= 60)) return false;
+    if (verdict === 'bad' && !(property.signal < 42)) return false;
+    if (query) {
+      const text = `${property.address} ${property.city || ''} ${property.zip}`.toLowerCase();
+      if (!query.toLowerCase().split(/\s+/).filter(Boolean).every((term) => text.includes(term))) return false;
+    }
+    return true;
   }
 
-  score(listing) { return Math.max(-40, Math.min(80, listing.trend + this.impactFor(listing))); }
-
-  query({ query = '', band = 'all', type = 'all' } = {}) {
-    const normalizedQuery = query.toLowerCase().trim();
-    const records = this.all().filter((listing) => {
-      const queryMatch = !normalizedQuery || `${listing.address} ${listing.city} ${listing.zip}`.toLowerCase().includes(normalizedQuery);
-      const bandIndex = PRICE_BANDS.findIndex((item) => listing.price <= item.max);
-      return queryMatch && (band === 'all' || Number(band) === bandIndex) && (type === 'all' || listing.type.toLowerCase().includes(type.toLowerCase()));
-    });
-    return { mode: this.mode, records, summary: this.summary(records), totalZipCount: new Set(records.map((record) => record.zip)).size, zipSignals: this.zipSignals(records) };
+  query(filters = DEFAULT_FILTERS) {
+    const pool = filters.statuses.includes('off-market') ? [...this.properties, ...this.offMarketRecords()] : this.properties;
+    const records = pool.filter((property) => this.matches(property, filters));
+    return { filters, records, summary: this.summary(records), counts: this.counts(filters) };
   }
 
-  summary(records = this.all()) {
-    const signal = Math.round(Math.max(0, Math.min(100, 54 + median(records.map((item) => this.score(item))) * 1.3)));
-    return { count: records.length, medianPrice: median(records.map((item) => item.price)), medianPpsf: median(records.map((item) => item.pricePerSqft)), signal };
+  counts(filters) {
+    const counts = {};
+    for (const property of [...this.properties, ...this.offMarketRecords()]) {
+      if (this.matches(property, { ...filters, statuses: [property.status] })) counts[property.status] = (counts[property.status] || 0) + 1;
+    }
+    return counts;
   }
 
-  zipSignals(records = this.all(), limit = 6) {
-    return [...groupBy(records, 'zip').entries()].map(([zip, zipRecords]) => ({
-      zip, count: zipRecords.length, median: median(zipRecords.map((item) => item.price)), trend: median(zipRecords.map((item) => this.score(item))),
-    })).sort((a, b) => b.count - a.count || b.trend - a.trend).slice(0, limit);
+  summary(records) {
+    const sold = records.filter((item) => item.status === 'sold');
+    const active = records.filter((item) => item.status === 'for-sale' || item.status === 'pending');
+    return {
+      count: records.length,
+      medianSale: median(sold.map((item) => item.price)),
+      medianAsk: median(active.map((item) => item.price)),
+      medianResaleAnnual: median(records.map((item) => item.resale?.annualPct)),
+      goodDeals: active.filter((item) => item.deal?.key === 'good').length,
+      overpriced: active.filter((item) => item.deal?.key === 'bad').length,
+    };
   }
+
+  rankedAreas(metric = 'score') {
+    const value = (area) => (metric === 'score' ? area.score?.total : area.metrics?.[metric]);
+    return [...this.areas].filter((area) => Number.isFinite(value(area))).sort((a, b) => value(b) - value(a));
+  }
+
+  regionSummary() {
+    const scored = this.areas.filter((area) => area.metrics?.value);
+    const weightOf = (area) => area.metrics.population || 1;
+    const weighted = (key) => {
+      const rows = scored.filter((area) => Number.isFinite(area.metrics[key]));
+      const total = rows.reduce((sum, area) => sum + weightOf(area), 0);
+      return total ? rows.reduce((sum, area) => sum + area.metrics[key] * weightOf(area), 0) / total : null;
+    };
+    return { zips: this.areas.length, medianValue: median(scored.map((area) => area.metrics.value)), yoyPct: weighted('yoyPct'), forecastPct: weighted('forecast1yPct'), yieldPct: weighted('grossYieldPct') };
+  }
+
+  projectsFor(area) { return (area.topProjects || []).map((item) => ({ ...item, project: this.projects.find((project) => project.id === item.id) })).filter((item) => item.project); }
 }

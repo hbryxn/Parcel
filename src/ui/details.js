@@ -2,7 +2,7 @@ import { STATUSES, VERDICT_COLORS } from '../config.js';
 import { COMPONENTS } from '../analytics/areaModel.js';
 import { lineChart, rangeBar, scoreRing } from './charts.js';
 import { ago, date, esc, money, num, pct, safeUrl } from './format.js';
-import { PROJECT_COLORS } from '../map/layers/projectLayer.js';
+import { GROUP_COLORS } from '../map/layers/projectLayer.js';
 
 const metric = (label, value, hint = '') => `<div class="metric"><span>${esc(label)}</span><strong>${value}</strong>${hint ? `<small>${esc(hint)}</small>` : ''}</div>`;
 const tone = (value) => (!Number.isFinite(value) ? '' : value > 0.05 ? 'up' : value < -0.05 ? 'down' : '');
@@ -11,7 +11,7 @@ const link = (url, label) => (safeUrl(url) ? `<a class="source-link" href="${esc
 const verdictChip = (verdict) => `<span class="chip verdict" style="--chip:${VERDICT_COLORS[verdict?.key] || VERDICT_COLORS.limited}">${esc(verdict?.label || 'Limited data')}</span>`;
 
 // ---------------------------------------------------------------- ZIP / area
-export function areaDetail(area, { regionSeries, projects, asOf }) {
+export function areaDetail(area, { regionSeries, projects, asOf, openings = [], housing = [] }) {
   const m = area.metrics; const s = area.score || {};
   const components = Object.entries(COMPONENTS).map(([key, component]) => {
     const value = s.components?.[key];
@@ -63,14 +63,29 @@ export function areaDetail(area, { regionSeries, projects, asOf }) {
     <section class="detail-section">
       <h3>Planned projects nearby <small>+${num(m.projectIndex, 1)} pts expected lift</small></h3>
       ${projects.length ? `<ul class="project-list">${projects.map(({ project, contribution }) => `
-        <li><button data-project="${esc(project.id)}"><i style="background:${PROJECT_COLORS[project.direction]}"></i><span>${esc(project.name)}<small>${esc(project.categoryLabel)} · ${esc(project.stageLabel)}</small></span><b class="${tone(contribution)}">${contribution > 0 ? '+' : ''}${contribution.toFixed(2)}</b></button></li>`).join('')}</ul>` : '<p class="muted">No tracked projects influence this ZIP.</p>'}
+        <li><button data-project="${esc(project.id)}"><i style="background:${GROUP_COLORS[project.group] || GROUP_COLORS.infrastructure}"></i><span>${esc(project.name)}<small>${esc(project.categoryLabel)} · ${esc(project.stageLabel)}</small></span><b class="${tone(contribution)}">${contribution > 0 ? '+' : ''}${contribution.toFixed(2)}</b></button></li>`).join('')}</ul>` : '<p class="muted">No tracked projects influence this ZIP.</p>'}
+    </section>
+    <section class="detail-section">
+      <h3>New development <small>permits, plats & recorded sales</small></h3>
+      <div class="metrics three">
+        ${metric('New-build sales', Number.isFinite(m.newBuildSharePct) ? `${m.newBuildSharePct.toFixed(0)}%` : num(m.newBuildSales12m), Number.isFinite(m.newBuildSales12m) ? `${num(m.newBuildSales12m)} homes, 12 mo` : 'outside Chatham records')}
+        ${metric('New businesses', num(m.businessOpenings12m), Number.isFinite(m.groceryOpenings12m) && m.groceryOpenings12m ? `${m.groceryOpenings12m} grocery · 12 mo` : m.businessOpenings12m === null ? 'outside city permits' : 'permitted, 12 mo')}
+        ${metric('Apartment pipeline', num(m.apartmentUnitsPipeline), m.apartmentUnitsPipeline === null ? 'outside city data' : 'units proposed/permitted')}
+        ${metric('New subdivisions', num(m.newSubdivisions3y), Number.isFinite(m.subdivisionAcres3y) ? `${num(m.subdivisionAcres3y)} acres · 3 yrs` : 'outside Chatham plats')}
+        ${metric('New-home permits', num(m.newHomePermits12m), m.newHomePermits12m === null ? 'outside city permits' : '12 months')}
+        ${metric('Built since 2010', Number.isFinite(m.builtSince2010Pct) ? `${m.builtSince2010Pct.toFixed(0)}%` : '—', 'share of all homes')}
+      </div>
+      ${openings.length ? `<h4 class="sub">Recent store & business openings</h4><ul class="project-list">${openings.map((project) => `
+        <li><button data-project="${esc(project.id)}"><i style="background:${GROUP_COLORS.business}"></i><span>${esc(project.name)}<small>${esc(project.subtype)} · ${esc(project.stageLabel)} · ${esc(date(project.openedAt || project.permittedAt, 'month'))}</small></span></button></li>`).join('')}</ul>` : ''}
+      ${housing.length ? `<h4 class="sub">Housing in the pipeline</h4><ul class="project-list">${housing.map((project) => `
+        <li><button data-project="${esc(project.id)}"><i style="background:${GROUP_COLORS.housing}"></i><span>${esc(project.name)}<small>${esc(project.units ? `${num(project.units)} units · ${project.stageLabel}` : `${num(project.acres)} acres · recorded ${date(project.recordedAt, 'month')}`)}</small></span></button></li>`).join('')}</ul>` : ''}
     </section>
     <section class="detail-section">
       <h3>People & housing <small>ACS 2020–24</small></h3>
       <div class="metrics three">
         ${metric('Population', num(m.population))}
         ${metric('Renters', Number.isFinite(m.renterSharePct) ? `${m.renterSharePct.toFixed(0)}%` : '—')}
-        ${metric('Built since 2010', Number.isFinite(m.builtSince2010Pct) ? `${m.builtSince2010Pct.toFixed(0)}%` : '—')}
+        ${metric('Vacancy', Number.isFinite(m.vacancyPct) ? `${m.vacancyPct.toFixed(0)}%` : '—')}
       </div>
     </section>
     <p class="fine-print">Scores rank this ZIP against the others in the region. They're a research signal, not investment advice. Verify with local comps, inspections and a licensed professional.</p>`;
@@ -115,6 +130,7 @@ export function propertyDetail(property, { area }) {
       <span class="eyebrow"><i class="status-dot ${esc(property.status)}"></i>${esc(status.label.toUpperCase())}${property.live ? ' · LIVE' : ''}${property.stale ? ' · SNAPSHOT' : ''} · ZIP ${esc(property.zip)}</span>
       <h2>${esc(property.address)}</h2>
       <p class="muted">${esc([property.city, property.propertyType !== 'Residential' ? property.propertyType : null, property.yearBuilt ? `built ${property.yearBuilt}` : null].filter(Boolean).join(' · '))}</p>
+      ${property.newConstruction ? '<div class="tags"><span class="tag new-build">New construction</span></div>' : ''}
     </header>
     <section class="detail-section">
       <div class="metrics three">
@@ -142,12 +158,17 @@ export function propertyDetail(property, { area }) {
 }
 
 // ---------------------------------------------------------------- project
+const timingTag = (project) => {
+  if (project.group === 'business' || !project.expectedYear || project.recordedAt) return '';
+  return `<span class="tag">${project.stage === 'complete' ? 'Completed' : 'Expected'} ~${Math.round(project.expectedYear)}</span>`;
+};
+
 export function projectDetail(project, { affectedAreas }) {
   return `
     <header class="detail-head">
-      <span class="eyebrow"><i class="status-dot project" style="background:${PROJECT_COLORS[project.direction]}"></i>PLANNED PROJECT · ${esc(project.categoryLabel.toUpperCase())}</span>
+      <span class="eyebrow"><i class="status-dot project" style="background:${GROUP_COLORS[project.group] || GROUP_COLORS.infrastructure}"></i>${esc({ business: 'NEW BUSINESS', housing: 'NEW DEVELOPMENT' }[project.group] || 'PLANNED PROJECT')} · ${esc(project.categoryLabel.toUpperCase())}</span>
       <h2>${esc(project.name)}</h2>
-      <div class="tags"><span class="tag">${esc(project.stageLabel)}</span>${project.expectedYear ? `<span class="tag">${project.stage === 'complete' ? 'Completed' : 'Expected'} ~${Math.round(project.expectedYear)}</span>` : ''}${project.coordinatePrecision === 'approximate' ? '<span class="tag">Approximate location</span>' : ''}</div>
+      <div class="tags"><span class="tag">${esc(project.stageLabel)}</span>${timingTag(project)}${project.brand ? `<span class="tag">${esc(project.brand)}</span>` : ''}${project.coordinatePrecision === 'approximate' ? '<span class="tag">Approximate location</span>' : ''}</div>
     </header>
     <section class="detail-section">
       <p class="lede">${esc(project.summary || 'No description published.')}</p>
@@ -156,8 +177,11 @@ export function projectDetail(project, { affectedAreas }) {
         ${metric('Delivery odds', `${Math.round(project.probability * 100)}%`, `stage: ${project.stageLabel}`)}
         ${metric('Reach', `${num(project.reachMiles, 1)} mi`, project.direction === 'mixed' ? 'mixed: benefits and nuisance' : project.direction)}
       </div>
-      ${project.costUsd ? `<p class="muted">Reported value: ${money(project.costUsd, true)}</p>` : ''}
-      ${project.jobs ? `<p class="muted">Target jobs: ${num(project.jobs)}</p>` : ''}
+      <div class="facts">${[
+        project.units ? `${num(project.units)} units` : null, project.acres ? `${num(project.acres, project.acres < 10 ? 1 : 0)} acres` : null,
+        project.workClass || null, project.costUsd ? `${money(project.costUsd, true)} permit value` : null, project.jobs ? `${num(project.jobs)} target jobs` : null,
+        project.permittedAt ? `Permitted ${date(project.permittedAt)}` : null, project.openedAt ? `Finalized ${date(project.openedAt)}` : null, project.recordedAt ? `Recorded ${date(project.recordedAt)}` : null,
+      ].filter(Boolean).map((fact) => `<span>${esc(fact)}</span>`).join('')}</div>
     </section>
     <section class="detail-section">
       <h3>How it's scored</h3>

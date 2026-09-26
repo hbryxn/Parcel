@@ -16,7 +16,7 @@ export class MarketController {
     this.filters = { ...DEFAULT_FILTERS, statuses: [...DEFAULT_FILTERS.statuses] };
     this.areaMetric = preferences.get('areaMetric', 'score');
     this.colorMode = preferences.get('colorMode', 'change');
-    this.layers = { areas: true, projects: true, properties: true };
+    this.layers = { areas: true, properties: true, infrastructure: true, housing: true, business: true };
     this.projectFilter = 'major';
     this.history = [];
     this.areaBoxes = data.areas.map((area) => ({ zip: area.zip, box: bboxOf(area.geometry) }));
@@ -87,9 +87,16 @@ export class MarketController {
 
   renderProjects() {
     const all = [...this.data.projects];
-    const filtered = this.projectFilter === 'active' ? all.filter((project) => ['construction', 'funded', 'design'].includes(project.stage))
-      : this.projectFilter === 'major' ? all.filter((project) => Math.abs(project.weightedPeak) >= 1 || project.origin === 'curated') : all;
-    this.dashboard.renderProjects(filtered.sort((a, b) => Math.abs(b.weightedPeak) - Math.abs(a.weightedPeak)));
+    const byImpact = (a, b) => Math.abs(b.weightedPeak) - Math.abs(a.weightedPeak);
+    const byDate = (a, b) => String(b.permittedAt || b.recordedAt || '').localeCompare(String(a.permittedAt || a.recordedAt || ''));
+    const views = {
+      major: () => all.filter((project) => project.group === 'infrastructure' && (Math.abs(project.weightedPeak) >= 1 || project.origin === 'curated')).sort(byImpact),
+      housing: () => all.filter((project) => project.group === 'housing').sort((a, b) => (b.units || 0) - (a.units || 0) || byDate(a, b)),
+      business: () => all.filter((project) => project.group === 'business').sort(byDate),
+      active: () => all.filter((project) => ['construction', 'funded', 'design'].includes(project.stage)).sort(byImpact),
+      all: () => all.sort(byImpact),
+    };
+    this.dashboard.renderProjects((views[this.projectFilter] || views.all)());
   }
 
   areaTooltip(zip) {
@@ -127,7 +134,10 @@ export class MarketController {
     if (!fromHistory) this.pushHistory();
     this.current = { type: 'area', id: zip };
     this.map.select({ type: 'area', id: zip });
-    this.openDrawer(`ZIP ${zip}`, areaDetail(area, { regionSeries: this.data.regionSeries, projects: this.market.projectsFor(area), asOf: this.data.asOf }));
+    const inZip = this.data.projects.filter((project) => project.zip === zip);
+    const openings = inZip.filter((project) => project.category === 'business').sort((a, b) => String(b.permittedAt).localeCompare(String(a.permittedAt))).slice(0, 6);
+    const housing = inZip.filter((project) => project.group === 'housing').sort((a, b) => (b.units || 0) - (a.units || 0) || (b.acres || 0) - (a.acres || 0)).slice(0, 5);
+    this.openDrawer(`ZIP ${zip}`, areaDetail(area, { regionSeries: this.data.regionSeries, projects: this.market.projectsFor(area), asOf: this.data.asOf, openings, housing }));
     if (fly) this.map.focusArea(area);
   }
 

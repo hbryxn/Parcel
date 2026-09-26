@@ -1,6 +1,6 @@
 import { AREA_METRICS, COLOR_MODES, DIVERGING, PRICE_BANDS, STATUSES, VERDICT_COLORS } from '../config.js';
 import { ago, date, esc, formatMetric, money, num, pct } from './format.js';
-import { PROJECT_COLORS } from '../map/layers/projectLayer.js';
+import { GROUP_COLORS } from '../map/layers/projectLayer.js';
 
 const STATUS_ORDER = ['for-sale', 'pending', 'sold', 'delisted', 'off-market'];
 const ICONS = {
@@ -74,7 +74,9 @@ export class Dashboard {
             <section class="control-group">
               <h4>Map layers</h4>
               <label class="toggle"><input type="checkbox" data-layer="areas" checked /><span></span>ZIP scores</label>
-              <label class="toggle"><input type="checkbox" data-layer="projects" checked /><span></span>Planned projects</label>
+              <label class="toggle"><input type="checkbox" data-layer="infrastructure" checked /><span></span><i class="swatch" style="background:${GROUP_COLORS.infrastructure}"></i>Infrastructure & civic projects</label>
+              <label class="toggle"><input type="checkbox" data-layer="housing" checked /><span></span><i class="swatch" style="background:${GROUP_COLORS.housing}"></i>New housing development</label>
+              <label class="toggle"><input type="checkbox" data-layer="business" checked /><span></span><i class="swatch" style="background:${GROUP_COLORS.business}"></i>New stores & businesses</label>
               <label class="toggle"><input type="checkbox" data-layer="properties" checked /><span></span>Homes</label>
               <label class="toggle"><input type="checkbox" id="three-d" /><span></span>3D massing</label>
             </section>
@@ -88,7 +90,7 @@ export class Dashboard {
 
           <div class="tab-body" data-body="projects" hidden>
             <div class="segmented small" id="project-filter">
-              <button data-pfilter="major" class="active">Highest impact</button><button data-pfilter="active">Under way</button><button data-pfilter="all">All</button>
+              <button data-pfilter="major" class="active">Infrastructure</button><button data-pfilter="housing">New housing</button><button data-pfilter="business">New stores</button><button data-pfilter="all">All</button>
             </div>
             <ul class="project-list tall" id="project-list"></ul>
           </div>
@@ -225,9 +227,15 @@ export class Dashboard {
 
   // ------------------------------------------------------------ projects tab
   renderProjects(projects) {
-    this.$('#project-list').innerHTML = projects.map((project) => `<li><button data-project="${esc(project.id)}">
-      <i style="background:${PROJECT_COLORS[project.direction]}"></i>
-      <span>${esc(project.name)}<small>${esc(project.categoryLabel)} · ${esc(project.stageLabel)}${project.expectedYear && project.stage !== 'complete' ? ` · ~${Math.round(project.expectedYear)}` : ''}</small></span>
+    const detail = (project) => {
+      if (project.category === 'business') return [project.subtype, project.stageLabel, project.openedAt ? `opened ${date(project.openedAt, 'month')}` : project.permittedAt ? `permitted ${date(project.permittedAt, 'month')}` : null];
+      if (project.category === 'multifamily') return [project.units ? `${num(project.units)} units` : null, project.stageLabel];
+      if (project.category === 'subdivision' || project.category === 'industrial') return [project.acres ? `${num(project.acres)} acres` : null, `recorded ${date(project.recordedAt, 'month')}`];
+      return [project.categoryLabel, project.stageLabel, project.expectedYear && project.stage !== 'complete' ? `~${Math.round(project.expectedYear)}` : null];
+    };
+    this.$('#project-list').innerHTML = projects.slice(0, 250).map((project) => `<li><button data-project="${esc(project.id)}">
+      <i style="background:${GROUP_COLORS[project.group] || GROUP_COLORS.infrastructure}"></i>
+      <span>${esc(project.name)}<small>${esc(detail(project).filter(Boolean).join(' · '))}</small></span>
       <b>${project.weightedPeak >= 0 ? '+' : ''}${project.weightedPeak.toFixed(1)}</b></button></li>`).join('') || '<li class="muted">No projects match.</li>';
   }
 
@@ -247,7 +255,7 @@ export class Dashboard {
     this.$('#legend').innerHTML = `
       ${layers.properties ? `<div class="legend-row"><span class="legend-title">Homes · ${esc(COLOR_MODES[colorMode].label)}</span><div class="legend-scale" style="background:${gradient(homeScale.colors)}"></div><div class="legend-ends"><span>${esc(homeScale.left)}</span><span>${esc(homeScale.right)}</span></div></div>` : ''}
       ${layers.areas ? `<div class="legend-row"><span class="legend-title">ZIPs · ${esc(area.label)}</span><div class="legend-scale" style="background:${gradient(area.stops.map(([, index]) => DIVERGING[index]))}"></div><div class="legend-ends"><span>${esc(formatMetric(area.stops[0][0], area.format))}</span><span>${esc(formatMetric(area.stops.at(-1)[0], area.format))}</span></div></div>` : ''}
-      ${layers.projects ? `<div class="legend-row inline"><span><i style="background:${PROJECT_COLORS.positive}"></i>Project</span><span><i style="background:${PROJECT_COLORS.mixed}"></i>Mixed impact</span><span><i class="ring"></i>Listing</span></div>` : ''}`;
+      <div class="legend-row inline">${[['infrastructure', 'Infrastructure'], ['housing', 'New housing'], ['business', 'New stores']].filter(([key]) => layers[key]).map(([key, label]) => `<span><i style="background:${GROUP_COLORS[key]}"></i>${label}</span>`).join('')}${layers.properties ? '<span><i class="ring"></i>Listing</span>' : ''}</div>`;
   }
 
   // ------------------------------------------------------------ drawer

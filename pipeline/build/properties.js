@@ -54,6 +54,7 @@ export function buildProperties({ parcels, inbox, rentcast, areasByZip, index, r
       sqft: details.sqft || null, beds: details.beds || null, baths: details.baths || null, propertyType: details.propertyType || 'Residential',
       assessedValue: parcel.fmv, estimate, sinceLastSale: sinceSale, resale: resaleChange(parcel.sales),
       history: parcel.sales.map((sale) => ({ date: sale.date, event: 'Sale', price: sale.price, quality: sale.quality || null })),
+      newConstruction: Boolean(parcel.yearBuilt && parcel.yearBuilt >= now.getUTCFullYear() - 2 && lastSale && Number(lastSale.date.slice(0, 4)) >= parcel.yearBuilt),
       areaScore: areaScore(parcel.zip), projectLift: lift(parcel.centroid), sourceName: 'Chatham County Board of Assessors', ...extra,
     };
   };

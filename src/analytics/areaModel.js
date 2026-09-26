@@ -60,7 +60,7 @@ export const COMPONENTS = {
   momentum: { label: 'Price momentum', weight: 0.25, features: { yoyPct: 0.4, cagr3Pct: 0.3, accelerationPct: 0.3 } },
   demand: { label: 'Buyer demand', weight: 0.2, features: { monthsSupply: -0.3, medianDom: -0.25, saleToListPct: 0.25, priceDropsPct: -0.2 } },
   value: { label: 'Value & yield', weight: 0.2, features: { grossYieldPct: 0.6, priceToIncome: -0.4 } },
-  growth: { label: 'Growth drivers', weight: 0.2, features: { forecast1yPct: 0.35, projectIndex: 0.4, builtSince2010Pct: 0.25 } },
+  growth: { label: 'Growth drivers', weight: 0.2, features: { forecast1yPct: 0.3, projectIndex: 0.35, builtSince2010Pct: 0.15, newBuildSharePct: 0.2 } },
   resilience: { label: 'Resilience', weight: 0.15, features: { drawdownPct: 0.5, volatilityPct: -0.5 } },
 };
 
@@ -105,6 +105,7 @@ const REASONS = {
   priceToIncome: [(v) => `Affordable at ${v.toFixed(1)}× income`, (v) => `Stretched at ${v.toFixed(1)}× income`],
   forecast1yPct: [(v) => `Zillow forecasts ${v >= 0 ? '+' : ''}${v.toFixed(1)}% next year`, (v) => `Zillow forecasts ${v.toFixed(1)}% next year`],
   projectIndex: [(v) => `Strong project pipeline (+${v.toFixed(1)} pts)`, () => 'Little planned investment nearby'],
+  newBuildSharePct: [(v) => `Active new construction (${v.toFixed(0)}% of sales are new builds)`, () => 'Little new construction selling'],
   builtSince2010Pct: [(v) => `Growing area (${v.toFixed(0)}% of homes built since 2010)`, (v) => `Mature housing stock (${v.toFixed(0)}% built since 2010)`],
   drawdownPct: [() => 'At or near peak values', (v) => `${Math.abs(v).toFixed(1)}% below recent peak`],
   volatilityPct: [() => 'Stable, low-volatility pricing', () => 'Volatile pricing'],

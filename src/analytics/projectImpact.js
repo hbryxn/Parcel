@@ -16,7 +16,19 @@ export const CATEGORY_EFFECTS = {
   residential: { label: 'New housing', effects: [{ lift: 1.2, radiusMiles: 0.8 }] },
   commercial: { label: 'Commercial construction', effects: [{ lift: 1.4, radiusMiles: 0.6 }] },
   rezoning: { label: 'Rezoning', effects: [{ lift: 0.9, radiusMiles: 0.5 }] },
+  subdivision: { label: 'New subdivision', effects: [{ lift: 0.8, radiusMiles: 0.6 }] },
+  multifamily: { label: 'Apartment development', effects: [{ lift: 0.9, radiusMiles: 0.7 }] },
+  industrial: { label: 'Industrial / logistics', effects: [{ lift: 0.8, radiusMiles: 4 }, { lift: -1, radiusMiles: 0.4 }] },
+  business: { label: 'New business', effects: [{ lift: 0.5, radiusMiles: 0.5 }] },
 };
+
+// How projects are grouped in filters and on the map.
+export const PROJECT_GROUPS = {
+  infrastructure: { label: 'Infrastructure & civic', categories: ['employment', 'port', 'transportation', 'mobility', 'parks', 'district', 'drainage', 'utilities', 'civic', 'rezoning'] },
+  housing: { label: 'New housing', categories: ['residential', 'subdivision', 'multifamily'] },
+  business: { label: 'New businesses', categories: ['business', 'commercial', 'industrial'] },
+};
+export const groupOf = (category) => Object.entries(PROJECT_GROUPS).find(([, group]) => group.categories.includes(category))?.[0] || 'infrastructure';
 
 // Likelihood the project is delivered roughly as described.
 export const STAGE_PROBABILITY = {
@@ -26,6 +38,13 @@ export const STAGE_PROBABILITY = {
 export const STAGE_LABELS = {
   withdrawn: 'Withdrawn', 'on-hold': 'On hold', proposed: 'Proposed', planning: 'Planning', approved: 'Approved', design: 'Design',
   funded: 'Funded / ongoing', construction: 'Under construction', complete: 'Complete',
+};
+
+// Businesses read better as opening status than as planning stages.
+const stageLabel = (project) => {
+  if (project.category === 'business') return project.likelyOpen ? 'Likely open' : { complete: 'Opened', construction: 'Opening soon', approved: 'In permitting' }[project.stage] || STAGE_LABELS[project.stage];
+  if (project.category === 'subdivision' || project.category === 'industrial') return 'Plat recorded';
+  return STAGE_LABELS[project.stage] || project.stage;
 };
 
 const SCALE = { site: { lift: 0.7, radius: 0.7 }, neighborhood: { lift: 1, radius: 1 }, district: { lift: 1.3, radius: 1.5 }, regional: { lift: 1, radius: 1 } };
@@ -49,8 +68,22 @@ const distanceToSegment = (point, a, b) => {
   return milesBetween(point, [(ax + t * (bx - ax)) / scale, ay + t * (by - ay)]);
 };
 
+const insideRing = ([x, y], ring) => {
+  let inside = false;
+  for (let index = 0, prev = ring.length - 1; index < ring.length; prev = index, index += 1) {
+    const [xi, yi] = ring[index]; const [xj, yj] = ring[prev];
+    if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+};
+
 export const distanceToGeometry = (point, geometry) => {
   if (geometry.type === 'Point') return milesBetween(point, geometry.coordinates);
+  if (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon') {
+    const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
+    if (polygons.some(([outer]) => insideRing(point, outer))) return 0;
+    return distanceToGeometry(point, { type: 'MultiLineString', coordinates: polygons.flat() });
+  }
   const lines = geometry.type === 'LineString' ? [geometry.coordinates] : geometry.coordinates;
   let best = Infinity;
   for (const line of lines) for (let index = 1; index < line.length; index += 1) best = Math.min(best, distanceToSegment(point, line[index - 1], line[index]));
@@ -70,7 +103,7 @@ export const resolveProject = (project, now = new Date()) => {
   const weight = probability * timing;
   const peak = effects.reduce((sum, effect) => sum + effect.lift, 0) * weight;
   return {
-    ...project, categoryLabel: category.label, stageLabel: STAGE_LABELS[project.stage] || project.stage,
+    ...project, categoryLabel: project.subtype && project.category === 'business' ? project.subtype : category.label, stageLabel: stageLabel(project), group: groupOf(project.category),
     probability, timing, effects, weightedPeak: Number(peak.toFixed(2)),
     reachMiles: Math.max(...effects.map((effect) => effect.radiusMiles)),
     direction: effects.every((effect) => effect.lift >= 0) ? 'positive' : effects.every((effect) => effect.lift <= 0) ? 'negative' : 'mixed',

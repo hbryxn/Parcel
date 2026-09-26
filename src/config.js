@@ -42,6 +42,8 @@ export const AREA_METRICS = {
   forecast1yPct: { label: 'Zillow 1-yr forecast', unit: '%', format: 'pct', stops: [[-2.5, 0], [-1.5, 1], [-0.5, 2], [0, 3], [0.5, 4], [1, 5], [2, 6]], description: 'Zillow Home Value Forecast for the next 12 months.' },
   grossYieldPct: { label: 'Gross rent yield', unit: '%', format: 'pct', stops: [[4, 0], [4.8, 1], [5.5, 2], [6.2, 3], [7, 4], [8, 5], [9.5, 6]], description: 'Annual market rent (ZORI) divided by typical home value.' },
   monthsSupply: { label: 'Months of supply', unit: 'mo', format: 'num', stops: [[9, 0], [7, 1], [5.5, 2], [4.5, 3], [3.5, 4], [2.5, 5], [1.5, 6]], description: 'Inventory ÷ monthly sales (Redfin). Lower means a tighter, seller-friendly market.' },
+  newBuildSharePct: { label: 'New-build share of sales', unit: '%', format: 'num', stops: [[0, 3], [5, 4], [15, 5], [35, 6]], description: 'Share of the last 12 months of recorded sales that were homes built in the last two years (Chatham County).' },
+  businessOpenings12m: { label: 'New businesses (12 mo)', unit: '', format: 'num', stops: [[0, 3], [2, 4], [5, 5], [10, 6]], description: 'Stores, restaurants and services permitted to open in the last 12 months (City of Savannah permits).' },
   projectIndex: { label: 'Project pipeline', unit: 'pts', format: 'num', stops: [[0, 3], [0.5, 4], [2, 5], [5, 6]], description: 'Probability- and time-weighted value lift expected from planned projects across the ZIP.' },
 };
 

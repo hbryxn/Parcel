@@ -154,6 +154,7 @@ select { appearance: none; border: 1px solid var(--border-strong); background: v
 
 .toggle { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; font-weight: 500; cursor: pointer; }
 .toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.toggle .swatch { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-right: -4px; }
 .toggle span { position: relative; width: 32px; height: 19px; border-radius: 999px; background: var(--surface-3); transition: background .2s; flex: none; }
 .toggle span::after { content: ''; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .2s; }
 .toggle input:checked + span { background: var(--accent); }
@@ -215,6 +216,8 @@ body.drawer-open .maplibregl-ctrl-bottom-right { right: calc(var(--drawer-w) + 1
 .score-ring .value { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dasharray .6s ease; }
 .score-ring text { font: 700 18px var(--font); fill: var(--text); }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.detail-section h4.sub { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); margin-top: 4px; }
+.tag.new-build { background: color-mix(in srgb, #0891b2 14%, transparent); color: #0891b2; }
 .tag { font-size: 11.5px; font-weight: 500; padding: 4px 9px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); cursor: default; }
 .detail-section { display: flex; flex-direction: column; gap: 12px; }
 .detail-section h3 { font-size: 13.5px; font-weight: 650; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }

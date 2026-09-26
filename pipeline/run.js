@@ -10,6 +10,7 @@ import { loadRedfin } from './sources/redfin.js';
 import { loadACS } from './sources/acs.js';
 import { loadParcels } from './sources/parcels.js';
 import { loadProjects } from './sources/projects.js';
+import { loadDevelopment } from './sources/development.js';
 import { loadInbox, loadRentCast } from './sources/listings.js';
 import { buildProperties, OFF_MARKET_COLUMNS } from './build/properties.js';
 import { createZipIndex, samplePoints } from './lib/geo.js';
@@ -19,6 +20,13 @@ import { assessmentRatios, backtestValuation, createIndex } from '../src/analyti
 import { median, pctChange } from '../src/analytics/stats.js';
 
 const args = new Set(process.argv.slice(2));
+const anchorOf = (project) => {
+  const { type, coordinates } = project.geometry;
+  if (type === 'Point') return coordinates;
+  if (type === 'LineString') return coordinates[Math.floor(coordinates.length / 2)];
+  if (type === 'MultiLineString') return coordinates[0][Math.floor(coordinates[0].length / 2)];
+  return coordinates[0][0];
+};
 const options = { offline: args.has('--offline') };
 const now = new Date();
 const today = now.toISOString().slice(0, 10);
@@ -57,9 +65,10 @@ async function main() {
   console.log(`  ${parcelData.parcels.length} residential parcels`);
 
   step('Planned projects & permits');
-  const projectData = await loadProjects(config, options, now);
-  const projects = projectData.projects.map((project) => resolveProject(project, now)).filter((project) => project.probability > 0);
-  console.log(`  ${projects.length} projects · ${projectData.permits.length} new-home permits`);
+  const [projectData, development] = await Promise.all([loadProjects(config, options, now), loadDevelopment(options, now)]);
+  const projects = [...projectData.projects, ...development.businesses, ...development.housing]
+    .map((project) => resolveProject(project, now)).filter((project) => project.probability > 0);
+  console.log(`  ${projectData.projects.length} projects · ${development.businesses.length} business openings · ${development.housing.length} housing developments · ${projectData.permits.length} new-home permits`);
 
   step('Listings (RentCast · inbox exports)');
   const [inbox, rentcast] = await Promise.all([loadInbox(), loadRentCast(config, await loadEnvKey(), options)]);
@@ -90,6 +99,30 @@ async function main() {
   }
   const yearAgo = shiftMonth(today.slice(0, 7), -12); const twoYearsAgo = shiftMonth(today.slice(0, 7), -24);
 
+  // Development activity per ZIP. City permit data only covers Savannah, so ZIPs with no
+  // permit history report null (unknown) rather than zero.
+  const permitZips = new Set(projectData.permits.map((permit) => zipOf(permit.geometry.coordinates)).filter(Boolean));
+  const chathamZips = new Set(parcelData.parcels.map((parcel) => parcel.zip));
+  const devByZip = new Map();
+  const bump = (zip, key, amount = 1) => { if (!zip) return; const row = devByZip.get(zip) || {}; row[key] = (row[key] || 0) + amount; devByZip.set(zip, row); };
+  const cutoff12 = `${yearAgo}-01`;
+  for (const project of projects) {
+    const zip = zipOf(project.centroid || anchorOf(project));
+    if (project.category === 'business' && (project.permittedAt || '') >= cutoff12) { bump(zip, 'businessOpenings12m'); if (project.businessType === 'grocery') bump(zip, 'groceryOpenings12m'); }
+    if (project.category === 'multifamily') bump(zip, 'apartmentUnitsPipeline', project.units || 0);
+    if (project.category === 'subdivision') { bump(zip, 'newSubdivisions3y'); bump(zip, 'subdivisionAcres3y', project.acres || 0); }
+  }
+  const builtRecently = (parcel) => parcel.yearBuilt && parcel.yearBuilt >= now.getUTCFullYear() - 2;
+  const newBuildByZip = new Map();
+  for (const parcel of parcelData.parcels) {
+    const sales = parcel.sales.filter((sale) => sale.quality === 'Q' && sale.price >= 30000 && sale.date.slice(0, 7) > yearAgo);
+    if (!sales.length) continue;
+    const row = newBuildByZip.get(parcel.zip) || { total: 0, fresh: 0 };
+    row.total += sales.length;
+    if (builtRecently(parcel) && sales.some((sale) => Number(sale.date.slice(0, 4)) >= parcel.yearBuilt)) row.fresh += 1;
+    newBuildByZip.set(parcel.zip, row);
+  }
+
   const rawAreas = zctas.areas.map((area) => {
     const z = zillow.zhvi[area.zip]; const census = acs.byZip[area.zip] || {};
     const price = priceFeatures(zhviByZip[area.zip], zoriByZip[area.zip]);
@@ -110,7 +143,14 @@ async function main() {
       ...price, ...market, forecast1yPct: zillow.forecast[area.zip]?.oneYearPct ?? null,
       medianIncome: census.medianIncome, population: census.population, renterSharePct: census.renterSharePct, builtSince2010Pct: census.builtSince2010Pct, vacancyPct: census.vacancyPct,
       priceToIncome: price.value && census.medianIncome ? price.value / census.medianIncome : null,
-      projectIndex: projectTotal / points.length, newHomePermits12m: permitsByZip.get(area.zip) ?? null,
+      projectIndex: projectTotal / points.length, newHomePermits12m: permitsByZip.get(area.zip) ?? (permitZips.has(area.zip) ? 0 : null),
+      businessOpenings12m: permitZips.has(area.zip) ? devByZip.get(area.zip)?.businessOpenings12m || 0 : null,
+      groceryOpenings12m: permitZips.has(area.zip) ? devByZip.get(area.zip)?.groceryOpenings12m || 0 : null,
+      apartmentUnitsPipeline: permitZips.has(area.zip) ? devByZip.get(area.zip)?.apartmentUnitsPipeline || 0 : null,
+      newSubdivisions3y: chathamZips.has(area.zip) ? devByZip.get(area.zip)?.newSubdivisions3y || 0 : null,
+      subdivisionAcres3y: chathamZips.has(area.zip) ? Math.round(devByZip.get(area.zip)?.subdivisionAcres3y || 0) : null,
+      newBuildSales12m: newBuildByZip.get(area.zip)?.fresh ?? null,
+      newBuildSharePct: newBuildByZip.get(area.zip)?.total >= 10 ? (newBuildByZip.get(area.zip).fresh / newBuildByZip.get(area.zip).total) * 100 : null,
       recordedSales12m: recorded.length ? last12.length : null, recordedMedian12m: median(last12), recordedYoyPct: last12.length >= 15 && prior12.length >= 15 ? pctChange(median(last12), median(prior12)) : null,
     };
     return {
@@ -150,8 +190,12 @@ async function main() {
 
   const manifest = {
     generatedAt: now.toISOString(), region: { ...config.region, zips: areas.length },
-    counts: { ...counts, offMarket: offMarketCount, projects: projects.length, permits: projectData.permits.length },
-    sources: [zctas.source, ...zillow.sources, redfin.source, acs.source, ...parcelData.sources, projectData.source, projectData.permitSource, ...listingSources],
+    counts: {
+      ...counts, offMarket: offMarketCount, projects: projects.length, permits: projectData.permits.length,
+      businessOpenings: development.businesses.length, subdivisions: development.housing.filter((item) => item.category === 'subdivision').length,
+      apartmentUnits: development.housing.filter((item) => item.category === 'multifamily').reduce((sum, item) => sum + (item.units || 0), 0),
+    },
+    sources: [zctas.source, ...zillow.sources, redfin.source, acs.source, ...parcelData.sources, projectData.source, development.source, projectData.permitSource, ...listingSources],
     quality: {
       valuation: valuation, areaModel: areaBacktest, completeness,
       activeInventory: { provider: rentcast.source.status === 'ok' ? 'RentCast' : 'Saved snapshot', live: rentcast.source.status === 'ok', records: activeRecords.length, newestRecordAt: newestActive, note: rentcast.source.note || null },
@@ -166,7 +210,7 @@ async function main() {
     write('properties.json', { generatedAt: manifest.generatedAt, properties: built.properties }),
     write('projects.json', {
       generatedAt: manifest.generatedAt,
-      projects: projects.map((project) => ({ ...project, summary: project.summary?.slice(0, 400) || '' })),
+      projects: projects.map((project) => ({ ...project, zip: zipOf(project.centroid || anchorOf(project)), summary: project.summary?.slice(0, 400) || '' })),
       permits: projectData.permits.filter((permit) => permit.issuedAt >= permitCutoff.toISOString().slice(0, 10)).map((permit) => ({ id: permit.id, issuedAt: permit.issuedAt, value: permit.value, coordinates: permit.geometry.coordinates })),
     }),
     write('manifest.json', manifest),

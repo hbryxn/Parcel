@@ -4,7 +4,9 @@ Parcel maps home values, price changes, planned projects and investment signals 
 
 - **Homes**: public-record sales from Chatham County with full sale history, listings (RentCast or Redfin exports), and all ~100k off-market Chatham homes with an estimated value today.
 - **Areas**: a 0–100 score per ZIP that combines price momentum, buyer demand, rent yield and affordability, growth drivers and resilience. Each score comes with plain-language strengths, risks and tags such as *Pipeline upside* or *In correction*.
-- **Projects**: city capital projects, the CORE MPO 2050 transportation plan, rezonings, MPC petitions, large commercial permits and curated regional catalysts (Hyundai Metaplant, Ocean Terminal, Canal District…). Each is weighted by delivery probability, timing and distance.
+- **Projects**: city capital projects, the CORE MPO 2050 transportation plan, rezonings, MPC petitions and curated regional catalysts (Hyundai Metaplant, Ocean Terminal, Canal District…). Each is weighted by delivery probability, timing and distance.
+- **New development**: recorded subdivision plats (Savannah and Chatham County), the city's apartment pipeline with unit counts, new-home permits, and new-construction home sales.
+- **New stores & businesses**: openings classified from City of Savannah commercial permits (grocery, restaurant and café, retail, gas and convenience, health, bank, hotel, services), with brand detection and an opening status (Opening soon / Likely open / Opened).
 - **Accuracy**: the Data & accuracy panel reports source freshness, an out-of-sample valuation backtest and a backtest of whether the area score predicted later appreciation.
 
 ## Run locally
@@ -40,6 +42,8 @@ npm run dev
 | Chatham BOA parcels (SAGIS) | Recorded sales, lot polygons, assessments, off-market homes | weekly |
 | Chatham parcel digests 2016–2025 | Multi-sale price history per parcel | weekly |
 | SAGIS / MPC layers | CIP, MTP 2050, rezonings, petitions, permits | every 3 days |
+| SAGIS commercial permits | Store and business openings (new builds and tenant build-outs) | every 3 days |
+| SAGIS apartment inventory + DPLAT plats | Apartment pipeline, new subdivisions and industrial plats | every 3 days |
 | `pipeline/catalysts.json` | Curated regional projects, each with a public source | review quarterly |
 | RentCast (optional) | Active and recently delisted listings | 12 hours |
 | `pipeline/inbox/*.csv\|json` | Redfin "Download All" exports and older feeds | whenever you add a file |
@@ -60,6 +64,7 @@ Without either, the app shows the saved 13-listing snapshot and says so.
 - **Valuation** (`src/analytics/valuationModel.js`) blends two estimates. The first adjusts the last arm's-length sale by the ZIP's Zillow index. The second calibrates the county assessment by the assessor neighborhood's sale/assessment ratio, falling back to ZIP × value band, then ZIP. Blend weights by sale age are learned with 5-fold cross-validation on the latest 12 months of qualified sales. Non-market transfers, lot sales before construction, and assessments set before a house was finished are all excluded. Current backtest: 12.9% median error (41% of homes within 10%). The previous ZIP $/ft² baseline was at 16.5% on its own data. Listings with square footage also get a comparable-sales estimate.
 - **Area score** (`src/analytics/areaModel.js`) ranks each feature against the region's other ZIPs. It needs 35% confidence to be shown at all, and 60% for an extreme call. The price-only part is rebuilt at past dates and checked against realized appreciation: mean rank correlation is 0.36, and the top third beat the bottom third by 3.6 points over the following 12 months.
 - **Project impact** (`src/analytics/projectImpact.js`): lift = category prior × stage probability (withdrawn 0 → complete 1) × timing (future benefits discounted about 10% a year; benefits delivered long ago are treated as priced in) × a smooth distance kernel. Projects can carry several effects; a port, for example, lifts the region but weighs on its immediate neighbors.
+- **Development**: each opening and development carries its own impact rule. A grocery lifts values within about 1.2 mi, restaurants within 0.5 mi, and gas stations help the area but weigh on next-door homes. Subdivisions, apartments and industrial plats have their own rules too. ZIPs gain development metrics (new-build share of sales, business openings, apartment units, subdivision acreage). The new-build share also feeds the score's growth component. City permit metrics are null, not zero, outside Savannah city limits.
 - **Deal signal** combines an asking price's gap to estimated value (55%), the area score (35%) and nearby project lift (10%).
 
 These are research signals, not appraisals or investment advice.

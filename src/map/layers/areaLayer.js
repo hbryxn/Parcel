@@ -51,7 +51,7 @@ export class AreaLayer {
       this.hovered = null; this.handlers.hover?.(null);
     });
     this.map.on('click', 'area-fill', (event) => {
-      const interactive = this.map.queryRenderedFeatures(event.point, { layers: ['property-points', 'property-lots', 'offmarket-points', 'project-points', 'project-lines'].filter((id) => this.map.getLayer(id)) });
+      const interactive = this.map.queryRenderedFeatures(event.point, { layers: ['property-points', 'property-lots', 'project-points', 'project-lines', 'project-areas'].filter((id) => this.map.getLayer(id)) });
       if (!interactive.length) this.handlers.select?.(event.features[0].properties.zip);
     });
   }

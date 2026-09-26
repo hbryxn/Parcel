@@ -112,3 +112,16 @@ test('published datasets honour the app contract', { skip: !existsSync(new URL('
     if (existsSync(file)) { const payload = JSON.parse(readFileSync(file, 'utf8')); assert.deepEqual(payload.columns, manifest.offMarketColumns); }
   }
 });
+
+test('commercial permits become store openings only for real new businesses', async () => {
+  const { classifyBusiness } = await import('../pipeline/sources/development.js');
+  const kind = (workClass, description) => classifyBusiness({ workClass, description })?.type.key ?? null;
+  assert.equal(kind('New', 'Construct Chick-fil-A fast food restaurant with drive-thru'), 'restaurant');
+  assert.equal(classifyBusiness({ workClass: 'New', description: 'Construct Chick-fil-A fast food restaurant' }).brand, 'Chick-fil-A');
+  assert.equal(kind('New', 'Ground up construction of a convenience store with (3) gas pumps.'), 'fuel');
+  assert.equal(kind('New', 'Six story hotel with 242 rooms and ground floor retail'), 'hotel');
+  assert.equal(kind('Renovation', 'Interior tenant improvement for a new restaurant'), 'restaurant');
+  assert.equal(kind('Renovation', 'Re-roof of existing retail store'), null); // repair, not an opening
+  assert.equal(kind('Renovation', 'Replace HVAC units at restaurant'), null);
+  assert.equal(kind('New', 'Building A of a new construction quadplex'), null); // housing, not a store
+});

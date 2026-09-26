@@ -122,3 +122,16 @@ test('ports lift the region but weigh on immediate neighbours', () => {
   assert.ok(impactAt([-81.1, 32.0805], [port]) < 0);
   assert.ok(impactAt([-81.2, 32.15], [port]) > 0);
 });
+
+test('development projects: polygons count as zero distance inside, and group correctly', async () => {
+  const { distanceToGeometry, groupOf } = await import('../src/analytics/projectImpact.js');
+  const plat = { type: 'Polygon', coordinates: [[[-81.2, 32.0], [-81.19, 32.0], [-81.19, 32.01], [-81.2, 32.01], [-81.2, 32.0]]] };
+  assert.equal(distanceToGeometry([-81.195, 32.005], plat), 0);
+  assert.ok(distanceToGeometry([-81.18, 32.005], plat) > 0.5);
+  assert.equal(groupOf('subdivision'), 'housing');
+  assert.equal(groupOf('business'), 'business');
+  assert.equal(groupOf('drainage'), 'infrastructure');
+  const store = resolveProject({ id: 's', name: 'Grocery', category: 'business', subtype: 'Grocery', stage: 'complete', likelyOpen: true, effects: [{ lift: 1.6, radiusMiles: 1.2 }], geometry: { type: 'Point', coordinates: [-81.1, 32.08] } }, new Date('2026-09-01'));
+  assert.equal(store.stageLabel, 'Likely open');
+  assert.equal(store.group, 'business');
+});

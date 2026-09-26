@@ -10,7 +10,7 @@ export class MapExperience {
     this.maplibregl = maplibregl;
     this.theme = theme;
     this.handlers = {};
-    this.state = { areas: [], records: [], projects: [], areaMetric: 'score', colorMode: 'change', layers: { areas: true, projects: true, properties: true }, threeD: false };
+    this.state = { areas: [], records: [], projects: [], areaMetric: 'score', colorMode: 'change', layers: { areas: true, properties: true, infrastructure: true, housing: true, business: true }, threeD: false };
     this.map = new maplibregl.Map({
       container, style: APP_CONFIG.mapStyles[theme], center: APP_CONFIG.center, zoom: APP_CONFIG.zoom, pitch: APP_CONFIG.pitch, bearing: APP_CONFIG.bearing,
       attributionControl: false, maxPitch: 70, hash: false,
@@ -76,7 +76,9 @@ export class MapExperience {
   setLayerVisible(layer, visible) { this.state.layers[layer] = visible; if (this.built) this.applyVisibility(); }
   applyVisibility() {
     this.areaLayer.setVisible(this.state.layers.areas);
-    this.projectLayer.setVisible(this.state.layers.projects);
+    const groups = ['infrastructure', 'housing', 'business'].filter((group) => this.state.layers[group]);
+    this.projectLayer.setVisible(groups.length > 0);
+    this.projectLayer.setGroups(groups);
     for (const id of ['property-points', 'property-price']) this.map.setLayoutProperty(id, 'visibility', this.state.layers.properties ? 'visible' : 'none');
     if (!this.state.layers.properties) { this.map.setLayoutProperty('property-lots', 'visibility', 'none'); this.map.setLayoutProperty('property-mass', 'visibility', 'none'); } else this.propertyLayer.set3D(this.state.threeD);
   }

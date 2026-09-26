@@ -24,20 +24,19 @@ const hrefOf = (html) => String(html || '').match(/href="([^"]+)"/)?.[1] || null
 
 async function fetchRaw(config) {
   const get = (url, options = {}) => queryAll(url, { geometry: true, ...options });
-  const [cip, mtpPoints, mtpSegments, rezonings, residential, commercial, agenda] = await Promise.all([
+  const [cip, mtpPoints, mtpSegments, rezonings, residential, agenda] = await Promise.all([
     get(config.sources.capitalProjects),
     get(config.sources.transportPoints),
     get(config.sources.transportSegments, { maxAllowableOffset: 0.0003 }),
     get(config.sources.rezonings),
     get(config.sources.residentialPermits, { where: "WorkClass = 'New'", outFields: 'PermitNumber,WorkClass,PermitStatus,District,IssuedDate_DATE,Address,Permit_Value,Description' }),
-    get(config.sources.commercialPermits, { outFields: 'PermitNumber,WorkClass,PermitStatus,District,IssuedDate_DATE,Address,Permit_Value,Description' }),
     get(config.sources.mpcAgenda),
   ]);
-  return { cip, mtpPoints, mtpSegments, rezonings, residential, commercial, agenda };
+  return { cip, mtpPoints, mtpSegments, rezonings, residential, agenda };
 }
 
 export async function loadProjects(config, options, now = new Date()) {
-  const raw = await cached('projects-raw.json', config.ttlHours.projects, () => fetchRaw(config), options);
+  const raw = await cached('projects-raw-v2.json', config.ttlHours.projects, () => fetchRaw(config), options);
   const catalysts = JSON.parse(await readFile(new URL('../catalysts.json', import.meta.url), 'utf8'));
   const nowYear = now.getUTCFullYear() + now.getUTCMonth() / 12;
   const projects = [];
@@ -91,15 +90,7 @@ export async function loadProjects(config, options, now = new Date()) {
     });
   }
 
-  for (const { attributes: a, geometry } of raw.value.commercial) {
-    const issued = yearOf(a.issueddate_date);
-    if (a.workclass !== 'New' || !(a.permit_value >= 1000000) || !issued || issued < nowYear - 3) continue;
-    projects.push({
-      id: `permit-${a.permitnumber}`, name: `${clean(a.address) || 'Commercial project'} (${a.district || 'Savannah'})`, category: 'commercial', scale: a.permit_value >= 10000000 ? 'neighborhood' : 'site',
-      stage: a.permitstatus === 'Issued' ? 'construction' : 'approved', expectedYear: issued + 1.5, costUsd: a.permit_value, subtype: 'New commercial permit',
-      summary: clean(a.description).slice(0, 280), origin: 'City of Savannah permits', source: 'City of Savannah building permits', sourceUrl: null, geometry: toGeometry(geometry),
-    });
-  }
+  // Commercial permits are classified into store openings in sources/development.js.
 
   // Individual new-home permits are too granular to plot as projects; keep them as a construction-activity signal.
   const permits = raw.value.residential.map(({ attributes: a, geometry }) => ({
@@ -111,7 +102,7 @@ export async function loadProjects(config, options, now = new Date()) {
   const counts = usable.reduce((acc, project) => ({ ...acc, [project.origin]: (acc[project.origin] || 0) + 1 }), {});
   return {
     projects: usable, permits, catalystsReviewedAt: catalysts.reviewedAt,
-    source: { id: 'projects', name: 'City of Savannah CIP, CORE MPO 2050 MTP, zoning actions, MPC petitions, commercial permits + curated catalysts', url: 'https://pub.sagis.org/arcgis/rest/services', fetchedAt: raw.cachedAt, records: usable.length, breakdown: counts },
+    source: { id: 'projects', name: 'City of Savannah CIP, CORE MPO 2050 MTP, zoning actions, MPC petitions + curated catalysts', url: 'https://pub.sagis.org/arcgis/rest/services', fetchedAt: raw.cachedAt, records: usable.length, breakdown: counts },
     permitSource: { id: 'permits', name: 'City of Savannah new residential permits', url: config.sources.residentialPermits, fetchedAt: raw.cachedAt, records: permits.length, newestRecordAt: permits.map((permit) => permit.issuedAt).filter(Boolean).sort().at(-1) },
   };
 }

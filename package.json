@@ -6,6 +6,8 @@
   "main": "main.js",
   "scripts": {
     "test": "node --test",
+    "pipeline": "node pipeline/run.js",
+    "pipeline:offline": "node pipeline/run.js --offline",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

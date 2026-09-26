@@ -16,7 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@supabase/supabase-js": "^2.110.0",
+    "@supabase/supabase-js": "^2.117.0",
     "maplibre-gl": "^5.24.0"
   },
   "devDependencies": {
